@@ -179,6 +179,11 @@ class InventarioController {
       const { id } = req.params;
       const data = { ...req.body };
 
+      // Cast idusuario_asignado to null if it's "null" or empty from FormData
+      if (data.idusuario_asignado === 'null' || data.idusuario_asignado === '') {
+        data.idusuario_asignado = null;
+      }
+
       if (req.files && req.files.fotos_entrega) {
         data.fotos_entrega = req.files.fotos_entrega.map(file => `/uploads/inventory/${file.filename}`);
       }

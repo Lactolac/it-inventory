@@ -70,6 +70,10 @@
                     <span class="info-label">Cantidad:</span>
                     <span>{{ item.cantidad || 1 }}</span>
                   </div>
+                  <div class="card-info" v-if="item.usuario_asignado_nombre">
+                    <span class="info-label">Asignado a:</span>
+                    <span style="color: #18a058; font-weight: 600;">{{ item.usuario_asignado_nombre }}</span>
+                  </div>
                 </div>
                 <template #action>
                   <n-space justify="end">
@@ -388,7 +392,15 @@ const columns = [
   },
   {
     title: 'Cantidad',
-    key: 'cantidad'
+    key: 'cantidad',
+    width: 80
+  },
+  {
+    title: 'Asignado a',
+    key: 'usuario_asignado_nombre',
+    render(row) {
+      return row.usuario_asignado_nombre || h('span', { style: 'color: #ccc' }, 'No asignado')
+    }
   },
   {
     title: 'Fecha Ingreso',
