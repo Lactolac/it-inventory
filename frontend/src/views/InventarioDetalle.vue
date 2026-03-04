@@ -17,7 +17,6 @@
             <n-descriptions-item label="Cantidad">{{ item.cantidad || 1 }}</n-descriptions-item>
             <n-descriptions-item label="Fecha Ingreso">{{ formatDate(item.fechaingreso) }}</n-descriptions-item>
             <n-descriptions-item label="Fecha Entrega">{{ formatDate(item.fechaentrega) }}</n-descriptions-item>
-            <n-descriptions-item label="Fecha Revisión">{{ formatDate(item.fecha_revision) }}</n-descriptions-item>
           </n-descriptions>
         </n-card>
 
@@ -89,10 +88,6 @@
             <n-button type="info" @click="showAsignarModal = true" :block="isMobile">
               <template #icon><n-icon><PersonAddOutline /></n-icon></template>
               Entregar Equipo
-            </n-button>
-            <n-button type="warning" @click="showRevisionModal = true" :block="isMobile">
-              <template #icon><n-icon><CalendarOutline /></n-icon></template>
-              Programar Revisión
             </n-button>
           </n-space>
         </n-card>
@@ -216,20 +211,6 @@
       </template>
     </n-modal>
 
-    <!-- Modal Revisión -->
-    <n-modal v-model:show="showRevisionModal" preset="card" title="Programar Revisión" style="width: 400px; max-width: 95vw;">
-      <n-form-item label="Fecha Revisión">
-        <n-date-picker v-model:value="revisionForm.fecha_revision" type="date" style="width: 100%" />
-      </n-form-item>
-      <n-form-item label="Auditor">
-        <n-select v-model:value="revisionForm.idauditoria" :options="usuariosOptions" :loading="loadingUsuarios" filterable />
-      </n-form-item>
-      <template #footer>
-        <n-space justify="end">
-          <n-button type="primary" :loading="saving" @click="handleRevision">Programar</n-button>
-        </n-space>
-      </template>
-    </n-modal>
   </div>
 </template>
 
@@ -251,7 +232,6 @@ const loading = ref(false)
 const saving = ref(false)
 const item = ref({})
 const showEditModal = ref(false)
-const showRevisionModal = ref(false)
 const usuariosOptions = ref([])
 const loadingUsuarios = ref(false)
 const isMobile = ref(false)
@@ -298,10 +278,6 @@ const asignarForm = ref({
   fechaentrega: Date.now()
 })
 
-const revisionForm = ref({
-  fecha_revision: null,
-  idauditoria: null
-})
 
 const tipoOptions = [
   { label: 'Laptop', value: 'Laptop' },
@@ -447,23 +423,6 @@ async function handleAsignar() {
   }
 }
 
-async function handleRevision() {
-  saving.value = true
-  try {
-    const data = {
-      fecha_revision: revisionForm.value.fecha_revision ? new Date(revisionForm.value.fecha_revision).toISOString().split('T')[0] : null,
-      idauditoria: revisionForm.value.idauditoria
-    }
-    await inventarioApi.setRevision(item.value.id, data)
-    message.success('Revisión programada correctamente')
-    showRevisionModal.value = false
-    loadItem()
-  } catch (error) {
-    message.error('Error al programar revisión')
-  } finally {
-    saving.value = false
-  }
-}
 
 onMounted(() => {
   checkMobile()
