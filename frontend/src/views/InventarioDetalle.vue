@@ -21,13 +21,18 @@
           </n-descriptions>
         </n-card>
 
-        <!-- Asignación -->
-        <n-card title="Asignación">
+        <!-- Entrega / Asignación -->
+        <n-card title="Entrega / Asignación">
           <n-descriptions :column="isMobile ? 1 : 2" label-placement="left">
-            <n-descriptions-item label="Usuario Asignado">
-              {{ item.usuario_asignado_nombre || 'Sin asignar' }}
+            <n-descriptions-item label="Personal Asignado">
+              <n-tag :type="item.usuario_asignado_nombre ? 'success' : 'default'">
+                {{ item.usuario_asignado_nombre || 'Pendiente de Entregar' }}
+              </n-tag>
             </n-descriptions-item>
-            <n-descriptions-item label="Auditor">
+            <n-descriptions-item label="Fecha de Entrega">
+              {{ formatDate(item.fechaentrega) }}
+            </n-descriptions-item>
+            <n-descriptions-item label="Auditor de Entrega">
               {{ item.auditor_nombre || 'Sin asignar' }}
             </n-descriptions-item>
             <n-descriptions-item label="Registrado por">
@@ -36,12 +41,42 @@
           </n-descriptions>
         </n-card>
 
-        <!-- Foto -->
-        <n-card title="Foto del Dispositivo">
-          <div v-if="item.fotoid" class="foto-container">
-            <img :src="item.fotoid" alt="Foto" class="foto-img" />
+        <!-- Fotos Entrega -->
+        <n-card title="Fotos de Entrega">
+          <div v-if="item.fotos_entrega?.length > 0" class="gallery-container">
+            <n-image-group>
+              <n-space>
+                <n-image
+                  v-for="(photo, index) in item.fotos_entrega"
+                  :key="index"
+                  :src="getPhotoUrl(photo)"
+                  width="150"
+                  class="gallery-img"
+                  border-radius="8"
+                />
+              </n-space>
+            </n-image-group>
           </div>
-          <n-empty v-else description="Sin foto" />
+          <n-empty v-else description="Sin fotos de entrega" />
+        </n-card>
+
+        <!-- Fotos Recepción -->
+        <n-card title="Fotos de Recepción">
+          <div v-if="item.fotos_recepcion?.length > 0" class="gallery-container">
+            <n-image-group>
+              <n-space>
+                <n-image
+                  v-for="(photo, index) in item.fotos_recepcion"
+                  :key="index"
+                  :src="getPhotoUrl(photo)"
+                  width="150"
+                  class="gallery-img"
+                  border-radius="8"
+                />
+              </n-space>
+            </n-image-group>
+          </div>
+          <n-empty v-else description="Sin fotos de recepción" />
         </n-card>
 
         <!-- Acciones -->
@@ -53,7 +88,7 @@
             </n-button>
             <n-button type="info" @click="showAsignarModal = true" :block="isMobile">
               <template #icon><n-icon><PersonAddOutline /></n-icon></template>
-              Asignar Usuario
+              Entregar Equipo
             </n-button>
             <n-button type="warning" @click="showRevisionModal = true" :block="isMobile">
               <template #icon><n-icon><CalendarOutline /></n-icon></template>
@@ -98,8 +133,66 @@
               <n-select v-model:value="editForm.tipo_dispositivo" :options="tipoOptions" />
             </n-form-item>
           </n-gi>
+          <n-gi :span="isMobile ? 1 : 2">
+            <n-form-item label="Agregar fotos">
+              <n-space vertical style="width: 100%">
+                <n-divider title-placement="left">Fotos de Entrega</n-divider>
+                <n-upload
+                  ref="uploadEntregaRef"
+                  multiple
+                  v-model:file-list="fileListEntrega"
+                  :max="10"
+                  accept="image/*"
+                  :default-upload="false"
+                  style="display: none"
+                />
+                <n-dropdown trigger="click" :options="photoOptions" @select="(key) => handlePhotoAction(key, 'entrega')">
+                  <n-button type="info" secondary block>
+                    <template #icon><n-icon><AddOutline /></n-icon></template>
+                    Agregar Fotos de Entrega
+                  </n-button>
+                </n-dropdown>
+                <n-upload
+                  multiple
+                  list-type="image-card"
+                  v-model:file-list="fileListEntrega"
+                  :max="10"
+                  accept="image/*"
+                  :show-trigger="false"
+                />
+
+                <n-divider title-placement="left">Fotos de Recepción</n-divider>
+                <n-upload
+                  ref="uploadRecepcionRef"
+                  multiple
+                  v-model:file-list="fileListRecepcion"
+                  :max="10"
+                  accept="image/*"
+                  :default-upload="false"
+                  style="display: none"
+                />
+                <n-dropdown trigger="click" :options="photoOptions" @select="(key) => handlePhotoAction(key, 'recepcion')">
+                  <n-button type="warning" secondary block>
+                    <template #icon><n-icon><AddOutline /></n-icon></template>
+                    Agregar Fotos de Recepción
+                  </n-button>
+                </n-dropdown>
+                <n-upload
+                  multiple
+                  list-type="image-card"
+                  v-model:file-list="fileListRecepcion"
+                  :max="10"
+                  accept="image/*"
+                  :show-trigger="false"
+                />
+              </n-space>
+            </n-form-item>
+          </n-gi>
         </n-grid>
       </n-form>
+
+      <!-- Custom Camera Modal -->
+      <CameraModal v-model:show="showCamera" @capture="handleCapture" />
       <template #footer>
         <n-space justify="end">
           <n-button type="primary" :loading="saving" @click="handleUpdate">Guardar</n-button>
@@ -107,14 +200,18 @@
       </template>
     </n-modal>
 
-    <!-- Modal Asignar -->
-    <n-modal v-model:show="showAsignarModal" preset="card" title="Asignar Usuario" style="width: 400px; max-width: 95vw;">
-      <n-form-item label="Usuario">
-        <n-select v-model:value="asignarForm.idusuario_asignado" :options="usuariosOptions" :loading="loadingUsuarios" filterable />
-      </n-form-item>
+    <n-modal v-model:show="showAsignarModal" preset="card" title="Entregar Equipo" style="width: 450px; max-width: 95vw;">
+      <n-space vertical>
+        <n-form-item label="Usuario que recibe">
+          <n-select v-model:value="asignarForm.idusuario_asignado" :options="usuariosOptions" :loading="loadingUsuarios" filterable placeholder="Seleccione un usuario" />
+        </n-form-item>
+        <n-form-item label="Fecha de Entrega">
+          <n-date-picker v-model:value="asignarForm.fechaentrega" type="date" style="width: 100%" placeholder="Seleccione fecha" />
+        </n-form-item>
+      </n-space>
       <template #footer>
         <n-space justify="end">
-          <n-button type="primary" :loading="saving" @click="handleAsignar">Asignar</n-button>
+          <n-button type="primary" :loading="saving" :disabled="!asignarForm.idusuario_asignado" @click="handleAsignar">Entregar</n-button>
         </n-space>
       </template>
     </n-modal>
@@ -137,11 +234,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useMessage } from 'naive-ui'
-import { CreateOutline, PersonAddOutline, CalendarOutline } from '@vicons/ionicons5'
+import { useMessage, NImage, NImageGroup, NUpload, NIcon, NDropdown, NDivider, NDatePicker, NTag } from 'naive-ui'
+import { CreateOutline, PersonAddOutline, CalendarOutline, CameraOutline, AddOutline, ImageOutline } from '@vicons/ionicons5'
 import { inventarioApi, usuariosApi } from '../api'
+import CameraModal from '../components/CameraModal.vue'
+
+const API_URL = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:3000'
 
 const route = useRoute()
 const router = useRouter()
@@ -151,11 +251,34 @@ const loading = ref(false)
 const saving = ref(false)
 const item = ref({})
 const showEditModal = ref(false)
-const showAsignarModal = ref(false)
 const showRevisionModal = ref(false)
 const usuariosOptions = ref([])
 const loadingUsuarios = ref(false)
 const isMobile = ref(false)
+const uploadEntregaRef = ref(null)
+const uploadRecepcionRef = ref(null)
+const fileListEntrega = ref([])
+const fileListRecepcion = ref([])
+const showCamera = ref(false)
+const captureCategory = ref('entrega')
+
+const photoOptions = [
+  {
+    label: 'Subir desde Archivo',
+    key: 'upload',
+    icon: () => h(NIcon, null, { default: () => h(ImageOutline) })
+  },
+  {
+    label: 'Tomar Foto',
+    key: 'camera',
+    icon: () => h(NIcon, null, { default: () => h(CameraOutline) })
+  }
+]
+
+const getPhotoUrl = (photo) => {
+  if (photo.startsWith('data:') || photo.startsWith('http')) return photo
+  return `${API_URL}${photo}`
+}
 
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 768
@@ -171,7 +294,8 @@ const editForm = ref({
 })
 
 const asignarForm = ref({
-  idusuario_asignado: null
+  idusuario_asignado: null,
+  fechaentrega: Date.now()
 })
 
 const revisionForm = ref({
@@ -232,19 +356,74 @@ async function loadUsuarios() {
   }
 }
 
+function handlePhotoAction(key, category) {
+  captureCategory.value = category
+  if (key === 'upload') {
+    const ref = category === 'entrega' ? uploadEntregaRef : uploadRecepcionRef
+    const uploadInput = ref.value?.$el.querySelector('input[type="file"]')
+    if (uploadInput) uploadInput.click()
+  } else if (key === 'camera') {
+    showCamera.value = true
+  }
+}
+
+function handleCapture({ file, preview }) {
+  const targetList = captureCategory.value === 'entrega' ? fileListEntrega : fileListRecepcion
+  targetList.value.push({
+    id: 'camera-' + Date.now(),
+    name: file.name,
+    status: 'finished',
+    file: file,
+    url: preview
+  })
+}
+
 async function handleUpdate() {
   saving.value = true
   try {
-    const data = {
-      ...editForm.value,
-      fechaentrega: editForm.value.fechaentrega ? new Date(editForm.value.fechaentrega).toISOString().split('T')[0] : null
+    const formData = new FormData()
+    
+    // Core fields
+    Object.keys(editForm.value).forEach(key => {
+      let val = editForm.value[key]
+      if (key === 'fechaentrega' && val) {
+        val = new Date(val).toISOString().split('T')[0]
+      }
+      if (val !== null && val !== undefined) {
+        formData.append(key, val)
+      }
+    })
+
+    // Existing Photos - Entrega
+    if (item.value.fotos_entrega) {
+      formData.append('fotos_entrega', typeof item.value.fotos_entrega === 'string' 
+        ? item.value.fotos_entrega 
+        : JSON.stringify(item.value.fotos_entrega))
     }
-    await inventarioApi.update(item.value.id, data)
-    message.success('Item actualizado correctamente')
+    // New Photos - Entrega
+    fileListEntrega.value.forEach(f => {
+      if (f.file) formData.append('fotos_entrega', f.file)
+    })
+
+    // Existing Photos - Recepcion
+    if (item.value.fotos_recepcion) {
+      formData.append('fotos_recepcion', typeof item.value.fotos_recepcion === 'string' 
+        ? item.value.fotos_recepcion 
+        : JSON.stringify(item.value.fotos_recepcion))
+    }
+    // New Photos - Recepcion
+    fileListRecepcion.value.forEach(f => {
+      if (f.file) formData.append('fotos_recepcion', f.file)
+    })
+
+    await inventarioApi.update(item.value.id, formData)
+    message.success('Item actualizado')
     showEditModal.value = false
+    fileListEntrega.value = []
+    fileListRecepcion.value = []
     loadItem()
   } catch (error) {
-    message.error('Error al actualizar')
+    message.error('Error al actualizar: ' + (error.response?.data?.message || error.message))
   } finally {
     saving.value = false
   }
@@ -253,12 +432,16 @@ async function handleUpdate() {
 async function handleAsignar() {
   saving.value = true
   try {
-    await inventarioApi.asignarUsuario(item.value.id, asignarForm.value.idusuario_asignado)
-    message.success('Usuario asignado correctamente')
+    const data = {
+      idusuario_asignado: asignarForm.value.idusuario_asignado,
+      fechaentrega: asignarForm.value.fechaentrega ? new Date(asignarForm.value.fechaentrega).toISOString().split('T')[0] : null
+    }
+    await inventarioApi.asignarUsuario(item.value.id, data)
+    message.success('Equipo entregado correctamente')
     showAsignarModal.value = false
     loadItem()
   } catch (error) {
-    message.error('Error al asignar')
+    message.error('Error al realizar la entrega')
   } finally {
     saving.value = false
   }
@@ -311,17 +494,16 @@ onUnmounted(() => {
   max-height: 150px;
 }
 
-.foto-container {
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.gallery-container {
+  min-height: 100px;
+  padding: 10px;
 }
 
-.foto-img {
-  max-width: 100%;
-  max-height: 300px;
+.gallery-img {
   border-radius: 8px;
+  cursor: pointer;
+  object-fit: cover;
+  border: 1px solid #eee;
 }
 
 /* Mobile styles */

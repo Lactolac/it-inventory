@@ -124,7 +124,8 @@ const createTables = async () => {
         cantidad INTEGER DEFAULT 1,
         fechaingreso DATE DEFAULT CURRENT_DATE,
         fechaentrega DATE,
-        fotoid TEXT,
+        fotos_entrega JSONB DEFAULT '[]',
+        fotos_recepcion JSONB DEFAULT '[]',
         fecha_revision DATE,
         tipo_dispositivo VARCHAR(100),
         id_usuario_registro INTEGER REFERENCES usuarios(id),
@@ -135,6 +136,25 @@ const createTables = async () => {
       )
     `);
     console.log('Table inventario created');
+
+    // Add columns if they don't exist
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='inventario' AND column_name='fotos_entrega') THEN
+          ALTER TABLE inventario ADD COLUMN fotos_entrega JSONB DEFAULT '[]';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='inventario' AND column_name='fotos_recepcion') THEN
+          ALTER TABLE inventario ADD COLUMN fotos_recepcion JSONB DEFAULT '[]';
+        END IF;
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='inventario' AND column_name='fotoid') THEN
+          ALTER TABLE inventario DROP COLUMN fotoid;
+        END IF;
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='inventario' AND column_name='fotos') THEN
+          ALTER TABLE inventario DROP COLUMN fotos;
+        END IF;
+      END $$;
+    `);
 
     // Add foreign key constraints for usuarios table
     await client.query(`

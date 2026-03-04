@@ -4,6 +4,7 @@ const { body, param, query } = require('express-validator');
 const InventarioController = require('../controllers/inventario.controller');
 const { validate } = require('../middleware/validate');
 const { authenticate, optionalAuth } = require('../middleware/auth');
+const upload = require('../middleware/upload.middleware');
 
 // Validation rules for creating inventory item
 const createValidation = [
@@ -31,11 +32,9 @@ const updateValidation = [
   body('id_usuario_registro').optional().isInt({ min: 1 }),
   body('idauditoria').optional().isInt({ min: 1 }),
   body('idusuario_asignado').optional().isInt({ min: 1 }),
-  body('fecha_revision').optional().isDate(),
   body('firma1').optional().isString(),
   body('firma2').optional().isString(),
   body('firma3').optional().isString(),
-  body('fotoid').optional().isString(),
   validate
 ];
 
@@ -45,7 +44,7 @@ const idValidation = [
 ];
 
 const listValidation = [
-  query('limit').optional().isInt({ min: 1, max: 100 }),
+  query('limit').optional().isInt({ min: 1, max: 1000 }),
   query('offset').optional().isInt({ min: 0 }),
   query('tipo_dispositivo').optional().isString(),
   query('search').optional().isString(),
@@ -185,7 +184,10 @@ router.get('/:id', optionalAuth, idValidation, InventarioController.findById);
  *       401:
  *         description: No autorizado
  */
-router.post('/', authenticate, createValidation, InventarioController.create);
+router.post('/', authenticate, upload.fields([
+  { name: 'fotos_entrega', maxCount: 10 },
+  { name: 'fotos_recepcion', maxCount: 10 }
+]), createValidation, InventarioController.create);
 
 /**
  * @swagger
@@ -254,7 +256,10 @@ router.post('/', authenticate, createValidation, InventarioController.create);
  *       404:
  *         description: Item no encontrado
  */
-router.put('/:id', authenticate, updateValidation, InventarioController.update);
+router.put('/:id', authenticate, upload.fields([
+  { name: 'fotos_entrega', maxCount: 10 },
+  { name: 'fotos_recepcion', maxCount: 10 }
+]), updateValidation, InventarioController.update);
 
 /**
  * @swagger
@@ -305,47 +310,12 @@ router.delete('/:id', authenticate, idValidation, InventarioController.delete);
  *       200:
  *         description: Usuario asignado
  */
-router.post('/:id/asignar', authenticate, [
+router.post('/:id/asignar', authenticate, upload.fields([
+  { name: 'fotos_entrega', maxCount: 10 }
+]), [
   param('id').isInt({ min: 1 }),
   body('idusuario_asignado').optional().isInt({ min: 1 }),
   validate
 ], InventarioController.asignarUsuario);
-
-/**
- * @swagger
- * /api/inventario/{id}/revision:
- *   post:
- *     summary: Programar revisión para item
- *     tags: [Inventario]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               fecha_revision:
- *                 type: string
- *                 format: date
- *               idauditoria:
- *                 type: integer
- *                 description: ID del auditor
- *     responses:
- *       200:
- *         description: Revisión programada
- */
-router.post('/:id/revision', authenticate, [
-  param('id').isInt({ min: 1 }),
-  body('fecha_revision').optional().isDate(),
-  body('idauditoria').optional().isInt({ min: 1 }),
-  validate
-], InventarioController.setRevision);
 
 module.exports = router;

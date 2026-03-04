@@ -46,12 +46,32 @@ export const authApi = {
 export const inventarioApi = {
   getAll: (params) => api.get('/inventario', { params }),
   getById: (id) => api.get(`/inventario/${id}`),
-  create: (data) => api.post('/inventario', data),
-  update: (id, data) => api.put(`/inventario/${id}`, data),
+  create: (data) => {
+    if (data instanceof FormData) {
+      return api.post('/inventario', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+    }
+    return api.post('/inventario', data)
+  },
+  update: (id, data) => {
+    if (data instanceof FormData) {
+      return api.put(`/inventario/${id}`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+    }
+    return api.put(`/inventario/${id}`, data)
+  },
   delete: (id) => api.delete(`/inventario/${id}`),
   getTipos: () => api.get('/inventario/tipos-dispositivo'),
-  asignarUsuario: (id, idusuario_asignado) => api.post(`/inventario/${id}/asignar`, { idusuario_asignado }),
-  setRevision: (id, data) => api.post(`/inventario/${id}/revision`, data)
+  asignarUsuario: (id, data) => {
+    if (data instanceof FormData) {
+      return api.post(`/inventario/${id}/asignar`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+    }
+    return api.post(`/inventario/${id}/asignar`, data)
+  },
 }
 
 // Licencias API

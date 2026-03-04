@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const swaggerUi = require('swagger-ui-express');
+const path = require('path');
 require('dotenv').config();
 
 // Import swagger config
@@ -19,6 +20,7 @@ const centrosDistribucionRoutes = require('./routes/centrosDistribucion.routes')
 
 // Import middleware
 const { errorHandler } = require('./middleware/errorHandler');
+const softMigrate = require('./database/soft-migrate');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +30,9 @@ app.use(helmet()); // Security headers
 app.use(cors()); // Enable CORS
 app.use(express.json({ limit: '10mb' })); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Static files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Request logging middleware (development)
 if (process.env.NODE_ENV !== 'production') {
@@ -79,6 +84,9 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
   console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
+  
+  // Run soft migration
+  softMigrate();
 });
 
 // Handle uncaught exceptions

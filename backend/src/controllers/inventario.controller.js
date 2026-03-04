@@ -5,7 +5,18 @@ class InventarioController {
   // Create new inventory item
   static async create(req, res, next) {
     try {
-      const item = await Inventario.create(req.body);
+      const data = { ...req.body };
+      
+      if (req.files) {
+        if (req.files.fotos_entrega) {
+          data.fotos_entrega = req.files.fotos_entrega.map(file => `/uploads/inventory/${file.filename}`);
+        }
+        if (req.files.fotos_recepcion) {
+          data.fotos_recepcion = req.files.fotos_recepcion.map(file => `/uploads/inventory/${file.filename}`);
+        }
+      }
+
+      const item = await Inventario.create(data);
       res.status(201).json({
         success: true,
         message: 'Item de inventario creado exitosamente',
@@ -68,7 +79,52 @@ class InventarioController {
   static async update(req, res, next) {
     try {
       const { id } = req.params;
-      const item = await Inventario.update(id, req.body);
+      // const data = { ...req.body }; // Removed as req.body is modified directly
+
+      // Handle Categorized Multi-Photo Uploads
+      if (req.files) {
+        // Process Entrega photos
+        let deliveryPhotos = [];
+        if (req.body.fotos_entrega) {
+          try {
+            deliveryPhotos = typeof req.body.fotos_entrega === 'string' 
+              ? JSON.parse(req.body.fotos_entrega) 
+              : req.body.fotos_entrega;
+          } catch (e) {
+            deliveryPhotos = [];
+          }
+        }
+        
+        if (req.files.fotos_entrega) {
+          const newDelivery = req.files.fotos_entrega.map(file => `/uploads/inventory/${file.filename}`);
+          deliveryPhotos = [...deliveryPhotos, ...newDelivery];
+        }
+        if (deliveryPhotos.length > 0 || req.files.fotos_entrega) { // Only update if there are photos or new ones were uploaded
+          req.body.fotos_entrega = deliveryPhotos;
+        }
+
+        // Process Recepcion photos
+        let receptionPhotos = [];
+        if (req.body.fotos_recepcion) {
+          try {
+            receptionPhotos = typeof req.body.fotos_recepcion === 'string' 
+              ? JSON.parse(req.body.fotos_recepcion) 
+              : req.body.fotos_recepcion;
+          } catch (e) {
+            receptionPhotos = [];
+          }
+        }
+        
+        if (req.files.fotos_recepcion) {
+          const newReception = req.files.fotos_recepcion.map(file => `/uploads/inventory/${file.filename}`);
+          receptionPhotos = [...receptionPhotos, ...newReception];
+        }
+        if (receptionPhotos.length > 0 || req.files.fotos_recepcion) { // Only update if there are photos or new ones were uploaded
+          req.body.fotos_recepcion = receptionPhotos;
+        }
+      }
+
+      const item = await Inventario.update(req.params.id, req.body);
 
       if (!item) {
         throw new NotFoundError('Item de inventario no encontrado');
@@ -121,9 +177,13 @@ class InventarioController {
   static async asignarUsuario(req, res, next) {
     try {
       const { id } = req.params;
-      const { idusuario_asignado } = req.body;
+      const data = { ...req.body };
 
-      const item = await Inventario.update(id, { idusuario_asignado });
+      if (req.files && req.files.fotos_entrega) {
+        data.fotos_entrega = req.files.fotos_entrega.map(file => `/uploads/inventory/${file.filename}`);
+      }
+
+      const item = await Inventario.update(id, data);
 
       if (!item) {
         throw new NotFoundError('Item de inventario no encontrado');
@@ -139,30 +199,6 @@ class InventarioController {
     }
   }
 
-  // Set revision date
-  static async setRevision(req, res, next) {
-    try {
-      const { id } = req.params;
-      const { fecha_revision, idauditoria } = req.body;
-
-      const item = await Inventario.update(id, { 
-        fecha_revision, 
-        idauditoria 
-      });
-
-      if (!item) {
-        throw new NotFoundError('Item de inventario no encontrado');
-      }
-
-      res.json({
-        success: true,
-        message: 'Revisión programada exitosamente',
-        data: item
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
 }
 
 module.exports = InventarioController;

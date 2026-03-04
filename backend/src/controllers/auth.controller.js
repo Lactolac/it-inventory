@@ -32,11 +32,12 @@ class AuthController {
       const responseData = await response.json();
 
       if (!response.ok) {
-        console.error('Auth service error:', responseData);
-        throw new UnauthorizedError(responseData.message || responseData.error || 'Credenciales inválidas');
+        console.error('Auth service error status:', response.status);
+        console.error('Auth service error data:', responseData);
+        throw new UnauthorizedError(responseData.message || responseData.error || `Credenciales inválidas (${response.status})`);
       }
 
-      console.log('Auth service response:', responseData);
+      console.log('Auth service response received successfully');
 
       // Extract user data from AD response
       const userData = responseData.user_data || {};
@@ -70,7 +71,12 @@ class AuthController {
         }
       });
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Detailed Login Error:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        code: error.code // Capture FetchError codes like ENOTFOUND
+      });
       next(error);
     }
   }
