@@ -39,6 +39,25 @@ const softMigrate = async () => {
         IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='inventario' AND column_name='fotos') THEN
           ALTER TABLE inventario DROP COLUMN fotos;
         END IF;
+
+        -- Migración para licencias: de departamento a país
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='licencias' AND column_name='iddepartamento') 
+           AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='licencias' AND column_name='idpais') THEN
+          
+          -- 1. Agregar columna idpais
+          ALTER TABLE licencias ADD COLUMN idpais INTEGER REFERENCES paises(id);
+          
+          -- 2. Migrar datos existentes
+          UPDATE licencias l 
+          SET idpais = d.idpais 
+          FROM departamentos d 
+          WHERE l.iddepartamento = d.id;
+          
+          -- 3. Eliminar columna iddepartamento
+          ALTER TABLE licencias DROP COLUMN iddepartamento;
+          
+          RAISE NOTICE 'Licencias table migrated from iddepartamento to idpais';
+        END IF;
       END $$;
     `);
     

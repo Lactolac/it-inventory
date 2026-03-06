@@ -50,7 +50,7 @@ class CentroDistribucion {
     const schema = process.env.DB_SCHEMA;
     const query = `
       SELECT * FROM "${schema}".centros_distribucion 
-      WHERE idpais = $1 AND activo = true 
+      WHERE idpais = $1 
       ORDER BY nombre
     `;
     const result = await pool.query(query, [idpais]);
@@ -63,7 +63,6 @@ class CentroDistribucion {
       SELECT cd.*, p.nombre as pais_nombre
       FROM "${schema}".centros_distribucion cd
       LEFT JOIN "${schema}".paises p ON cd.idpais = p.id
-      WHERE cd.activo = true 
       ORDER BY p.nombre, cd.nombre
     `;
     const result = await pool.query(query);

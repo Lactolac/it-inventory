@@ -29,12 +29,18 @@ class Usuarios {
       i.modelo as inventario_modelo,
       l.nombre as licencia_nombre,
       d.nombre as departamento_nombre,
-      p.nombre as puesto_nombre
+      p.nombre as puesto_nombre,
+      cd.nombre as cd_nombre,
+      pa.nombre as pais_nombre,
+      d.idcd,
+      d.idpais
       FROM usuarios u
       LEFT JOIN inventario i ON u.idinventario = i.id
       LEFT JOIN licencias l ON u.idlicencia = l.id
       LEFT JOIN departamentos d ON u.iddepartamento = d.id
-      LEFT JOIN puestos p ON u.idpuesto = p.id`;
+      LEFT JOIN puestos p ON u.idpuesto = p.id
+      LEFT JOIN centros_distribucion cd ON d.idcd = cd.id
+      LEFT JOIN paises pa ON d.idpais = pa.id`;
     
     const conditions = [];
     const params = [];
@@ -49,6 +55,16 @@ class Usuarios {
     if (iddepartamento) {
       conditions.push(`u.iddepartamento = $${paramCount++}`);
       params.push(iddepartamento);
+    }
+
+    if (options.idcd) {
+      conditions.push(`d.idcd = $${paramCount++}`);
+      params.push(options.idcd);
+    }
+
+    if (options.idpais) {
+      conditions.push(`d.idpais = $${paramCount++}`);
+      params.push(options.idpais);
     }
 
     if (conditions.length > 0) {
@@ -70,12 +86,18 @@ class Usuarios {
         i.modelo as inventario_modelo,
         l.nombre as licencia_nombre,
         d.nombre as departamento_nombre,
-        p.nombre as puesto_nombre
+        p.nombre as puesto_nombre,
+        cd.nombre as cd_nombre,
+        pa.nombre as pais_nombre,
+        d.idcd,
+        d.idpais
        FROM usuarios u
        LEFT JOIN inventario i ON u.idinventario = i.id
        LEFT JOIN licencias l ON u.idlicencia = l.id
        LEFT JOIN departamentos d ON u.iddepartamento = d.id
        LEFT JOIN puestos p ON u.idpuesto = p.id
+       LEFT JOIN centros_distribucion cd ON d.idcd = cd.id
+       LEFT JOIN paises pa ON d.idpais = pa.id
        WHERE u.id = $1`,
       [id]
     );
@@ -141,8 +163,9 @@ class Usuarios {
   }
 
   static async count(options = {}) {
-    const { search, iddepartamento } = options;
-    let sql = 'SELECT COUNT(*) FROM usuarios';
+    const { search, iddepartamento, idcd, idpais } = options;
+    let sql = `SELECT COUNT(*) FROM usuarios u
+      LEFT JOIN departamentos d ON u.iddepartamento = d.id`;
     const conditions = [];
     const params = [];
 
@@ -152,8 +175,18 @@ class Usuarios {
     }
 
     if (iddepartamento) {
-      conditions.push(`iddepartamento = $${params.length + 1}`);
+      conditions.push(`u.iddepartamento = $${params.length + 1}`);
       params.push(iddepartamento);
+    }
+
+    if (idcd) {
+      conditions.push(`d.idcd = $${params.length + 1}`);
+      params.push(idcd);
+    }
+
+    if (idpais) {
+      conditions.push(`d.idpais = $${params.length + 1}`);
+      params.push(idpais);
     }
 
     if (conditions.length > 0) {

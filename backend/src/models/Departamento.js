@@ -14,12 +14,11 @@ class Departamento {
   }
 
   static async findAll(options = {}) {
-    const { limit = 50, offset = 0, search } = options;
+    const { limit = 50, offset = 0, search, idcd, idpais } = options;
     let sql = `SELECT d.*, 
       p.nombre as pais_nombre,
       cd.nombre as cd_nombre,
       (SELECT COUNT(*) FROM usuarios u WHERE u.iddepartamento = d.id) as total_usuarios,
-      (SELECT COUNT(*) FROM licencias l WHERE l.iddepartamento = d.id) as total_licencias,
       (SELECT COUNT(*) FROM puestos p WHERE p.iddepartamento = d.id) as total_puestos
       FROM departamentos d
       LEFT JOIN paises p ON d.idpais = p.id
@@ -33,6 +32,16 @@ class Departamento {
       conditions.push(`(d.nombre ILIKE $${paramCount} OR p.nombre ILIKE $${paramCount} OR cd.nombre ILIKE $${paramCount})`);
       params.push(`%${search}%`);
       paramCount++;
+    }
+
+    if (idcd) {
+      conditions.push(`d.idcd = $${paramCount++}`);
+      params.push(idcd);
+    }
+
+    if (idpais) {
+      conditions.push(`d.idpais = $${paramCount++}`);
+      params.push(idpais);
     }
 
     if (conditions.length > 0) {
@@ -52,7 +61,6 @@ class Departamento {
         p.nombre as pais_nombre,
         cd.nombre as cd_nombre,
         (SELECT COUNT(*) FROM usuarios u WHERE u.iddepartamento = d.id) as total_usuarios,
-        (SELECT COUNT(*) FROM licencias l WHERE l.iddepartamento = d.id) as total_licencias,
         (SELECT COUNT(*) FROM puestos p WHERE p.iddepartamento = d.id) as total_puestos
        FROM departamentos d
        LEFT JOIN paises p ON d.idpais = p.id
@@ -91,13 +99,12 @@ class Departamento {
     const checkResult = await query(
       `SELECT 
         (SELECT COUNT(*) FROM usuarios WHERE iddepartamento = $1) as usuarios,
-        (SELECT COUNT(*) FROM licencias WHERE iddepartamento = $1) as licencias,
         (SELECT COUNT(*) FROM puestos WHERE iddepartamento = $1) as puestos`,
       [id]
     );
 
-    const { usuarios, licencias, puestos } = checkResult.rows[0];
-    if (parseInt(usuarios) > 0 || parseInt(licencias) > 0 || parseInt(puestos) > 0) {
+    const { usuarios, puestos } = checkResult.rows[0];
+    if (parseInt(usuarios) > 0 || parseInt(puestos) > 0) {
       throw new Error('No se puede eliminar el departamento porque tiene registros asociados');
     }
 
@@ -109,7 +116,7 @@ class Departamento {
   }
 
   static async count(options = {}) {
-    const { search } = options;
+    const { search, idcd, idpais } = options;
     let sql = `SELECT COUNT(*) FROM departamentos d
       LEFT JOIN paises p ON d.idpais = p.id
       LEFT JOIN centros_distribucion cd ON d.idcd = cd.id`;
@@ -118,6 +125,18 @@ class Departamento {
     if (search) {
       sql += ' WHERE (d.nombre ILIKE $1 OR p.nombre ILIKE $1 OR cd.nombre ILIKE $1)';
       params.push(`%${search}%`);
+    }
+
+    if (idcd) {
+      sql += params.length > 0 ? ' AND ' : ' WHERE ';
+      sql += `d.idcd = $${params.length + 1}`;
+      params.push(idcd);
+    }
+
+    if (idpais) {
+      sql += params.length > 0 ? ' AND ' : ' WHERE ';
+      sql += `d.idpais = $${params.length + 1}`;
+      params.push(idpais);
     }
 
     const result = await query(sql, params);

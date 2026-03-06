@@ -106,7 +106,7 @@ const createTables = async () => {
         fexpiraciones DATE,
         fcompra DATE,
         cantidad INTEGER DEFAULT 1,
-        iddepartamento INTEGER REFERENCES departamentos(id),
+        idpais INTEGER REFERENCES paises(id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -176,7 +176,7 @@ const createTables = async () => {
     await client.query(`CREATE INDEX idx_inventario_tipo ON inventario(tipo_dispositivo)`);
     await client.query(`CREATE INDEX idx_usuarios_correo ON usuarios(correo)`);
     await client.query(`CREATE INDEX idx_usuarios_departamento ON usuarios(iddepartamento)`);
-    await client.query(`CREATE INDEX idx_licencias_expiracion ON licencias(fexpiraciones)`);
+    await client.query(`CREATE INDEX idx_licencias_pais ON licencias(idpais)`);
     await client.query(`CREATE INDEX idx_puestos_departamento ON puestos(iddepartamento)`);
     await client.query(`CREATE INDEX idx_centros_pais ON centros_distribucion(idpais)`);
     await client.query(`CREATE INDEX idx_departamentos_pais ON departamentos(idpais)`);

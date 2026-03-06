@@ -9,7 +9,7 @@
         <!-- Información General -->
         <n-card title="Información General">
           <n-descriptions :column="isMobile ? 1 : 3" label-placement="left">
-            <n-descriptions-item label="No. Serie">{{ item.nserie || 'N/A' }}</n-descriptions-item>
+            <n-descriptions-item label="ST (Service Tag)">{{ item.nserie || 'N/A' }}</n-descriptions-item>
             <n-descriptions-item label="Marca">{{ item.marca || 'N/A' }}</n-descriptions-item>
             <n-descriptions-item label="Modelo">{{ item.modelo || 'N/A' }}</n-descriptions-item>
             <n-descriptions-item label="Activo Fijo">{{ item.nactivofijo || 'N/A' }}</n-descriptions-item>
@@ -45,14 +45,8 @@
           <div v-if="item.fotos_entrega?.length > 0" class="gallery-container">
             <n-image-group>
               <n-space>
-                <n-image
-                  v-for="(photo, index) in item.fotos_entrega"
-                  :key="index"
-                  :src="getPhotoUrl(photo)"
-                  width="150"
-                  class="gallery-img"
-                  border-radius="8"
-                />
+                <n-image v-for="(photo, index) in item.fotos_entrega" :key="index" :src="getPhotoUrl(photo)" width="150"
+                  class="gallery-img" border-radius="8" />
               </n-space>
             </n-image-group>
           </div>
@@ -64,14 +58,8 @@
           <div v-if="item.fotos_recepcion?.length > 0" class="gallery-container">
             <n-image-group>
               <n-space>
-                <n-image
-                  v-for="(photo, index) in item.fotos_recepcion"
-                  :key="index"
-                  :src="getPhotoUrl(photo)"
-                  width="150"
-                  class="gallery-img"
-                  border-radius="8"
-                />
+                <n-image v-for="(photo, index) in item.fotos_recepcion" :key="index" :src="getPhotoUrl(photo)"
+                  width="150" class="gallery-img" border-radius="8" />
               </n-space>
             </n-image-group>
           </div>
@@ -82,11 +70,15 @@
         <n-card title="Acciones">
           <n-space :vertical="isMobile" :size="isMobile ? 'small' : 'medium'">
             <n-button type="primary" @click="showEditModal = true" :block="isMobile">
-              <template #icon><n-icon><CreateOutline /></n-icon></template>
+              <template #icon><n-icon>
+                  <CreateOutline />
+                </n-icon></template>
               Editar
             </n-button>
             <n-button type="info" @click="showAsignarModal = true" :block="isMobile">
-              <template #icon><n-icon><PersonAddOutline /></n-icon></template>
+              <template #icon><n-icon>
+                  <PersonAddOutline />
+                </n-icon></template>
               Entregar Equipo
             </n-button>
           </n-space>
@@ -99,7 +91,7 @@
       <n-form :model="editForm" label-placement="top">
         <n-grid :cols="isMobile ? 1 : 2" :x-gap="20">
           <n-gi>
-            <n-form-item label="No. Serie">
+            <n-form-item label="ST (Service Tag)">
               <n-input v-model:value="editForm.nserie" />
             </n-form-item>
           </n-gi>
@@ -132,54 +124,34 @@
             <n-form-item label="Agregar fotos">
               <n-space vertical style="width: 100%">
                 <n-divider title-placement="left">Fotos de Entrega</n-divider>
-                <n-upload
-                  ref="uploadEntregaRef"
-                  multiple
-                  v-model:file-list="fileListEntrega"
-                  :max="10"
-                  accept="image/*"
-                  :default-upload="false"
-                  style="display: none"
-                />
-                <n-dropdown trigger="click" :options="photoOptions" @select="(key) => handlePhotoAction(key, 'entrega')">
+                <n-upload ref="uploadEntregaRef" multiple v-model:file-list="fileListEntrega" :max="10" accept="image/*"
+                  :default-upload="false" style="display: none" />
+                <n-dropdown trigger="click" :options="photoOptions"
+                  @select="(key) => handlePhotoAction(key, 'entrega')">
                   <n-button type="info" secondary block>
-                    <template #icon><n-icon><AddOutline /></n-icon></template>
+                    <template #icon><n-icon>
+                        <AddOutline />
+                      </n-icon></template>
                     Agregar Fotos de Entrega
                   </n-button>
                 </n-dropdown>
-                <n-upload
-                  multiple
-                  list-type="image-card"
-                  v-model:file-list="fileListEntrega"
-                  :max="10"
-                  accept="image/*"
-                  :show-trigger="false"
-                />
+                <n-upload multiple list-type="image-card" v-model:file-list="fileListEntrega" :max="10" accept="image/*"
+                  :show-trigger="false" />
 
                 <n-divider title-placement="left">Fotos de Recepción</n-divider>
-                <n-upload
-                  ref="uploadRecepcionRef"
-                  multiple
-                  v-model:file-list="fileListRecepcion"
-                  :max="10"
-                  accept="image/*"
-                  :default-upload="false"
-                  style="display: none"
-                />
-                <n-dropdown trigger="click" :options="photoOptions" @select="(key) => handlePhotoAction(key, 'recepcion')">
+                <n-upload ref="uploadRecepcionRef" multiple v-model:file-list="fileListRecepcion" :max="10"
+                  accept="image/*" :default-upload="false" style="display: none" />
+                <n-dropdown trigger="click" :options="photoOptions"
+                  @select="(key) => handlePhotoAction(key, 'recepcion')">
                   <n-button type="warning" secondary block>
-                    <template #icon><n-icon><AddOutline /></n-icon></template>
+                    <template #icon><n-icon>
+                        <AddOutline />
+                      </n-icon></template>
                     Agregar Fotos de Recepción
                   </n-button>
                 </n-dropdown>
-                <n-upload
-                  multiple
-                  list-type="image-card"
-                  v-model:file-list="fileListRecepcion"
-                  :max="10"
-                  accept="image/*"
-                  :show-trigger="false"
-                />
+                <n-upload multiple list-type="image-card" v-model:file-list="fileListRecepcion" :max="10"
+                  accept="image/*" :show-trigger="false" />
               </n-space>
             </n-form-item>
           </n-gi>
@@ -195,18 +167,22 @@
       </template>
     </n-modal>
 
-    <n-modal v-model:show="showAsignarModal" preset="card" title="Entregar Equipo" style="width: 450px; max-width: 95vw;">
+    <n-modal v-model:show="showAsignarModal" preset="card" title="Entregar Equipo"
+      style="width: 450px; max-width: 95vw;">
       <n-space vertical>
         <n-form-item label="Usuario que recibe">
-          <n-select v-model:value="asignarForm.idusuario_asignado" :options="usuariosOptions" :loading="loadingUsuarios" filterable placeholder="Seleccione un usuario" />
+          <n-select v-model:value="asignarForm.idusuario_asignado" :options="usuariosOptions" :loading="loadingUsuarios"
+            filterable placeholder="Seleccione un usuario" />
         </n-form-item>
         <n-form-item label="Fecha de Entrega">
-          <n-date-picker v-model:value="asignarForm.fechaentrega" type="date" style="width: 100%" placeholder="Seleccione fecha" />
+          <n-date-picker v-model:value="asignarForm.fechaentrega" type="date" style="width: 100%"
+            placeholder="Seleccione fecha" />
         </n-form-item>
       </n-space>
       <template #footer>
         <n-space justify="end">
-          <n-button type="primary" :loading="saving" :disabled="!asignarForm.idusuario_asignado" @click="handleAsignar">Entregar</n-button>
+          <n-button type="primary" :loading="saving" :disabled="!asignarForm.idusuario_asignado"
+            @click="handleAsignar">Entregar</n-button>
         </n-space>
       </template>
     </n-modal>
@@ -300,7 +276,7 @@ async function loadItem() {
   try {
     const response = await inventarioApi.getById(route.params.id)
     item.value = response.data.data
-    
+
     editForm.value = {
       nserie: item.value.nserie || '',
       marca: item.value.marca || '',
@@ -358,7 +334,7 @@ async function handleUpdate() {
   saving.value = true
   try {
     const formData = new FormData()
-    
+
     // Core fields
     Object.keys(editForm.value).forEach(key => {
       let val = editForm.value[key]
@@ -372,8 +348,8 @@ async function handleUpdate() {
 
     // Existing Photos - Entrega
     if (item.value.fotos_entrega) {
-      formData.append('fotos_entrega', typeof item.value.fotos_entrega === 'string' 
-        ? item.value.fotos_entrega 
+      formData.append('fotos_entrega', typeof item.value.fotos_entrega === 'string'
+        ? item.value.fotos_entrega
         : JSON.stringify(item.value.fotos_entrega))
     }
     // New Photos - Entrega
@@ -383,8 +359,8 @@ async function handleUpdate() {
 
     // Existing Photos - Recepcion
     if (item.value.fotos_recepcion) {
-      formData.append('fotos_recepcion', typeof item.value.fotos_recepcion === 'string' 
-        ? item.value.fotos_recepcion 
+      formData.append('fotos_recepcion', typeof item.value.fotos_recepcion === 'string'
+        ? item.value.fotos_recepcion
         : JSON.stringify(item.value.fotos_recepcion))
     }
     // New Photos - Recepcion

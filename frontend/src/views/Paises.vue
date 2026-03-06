@@ -130,9 +130,6 @@
             >
               <div class="card-header">
                 <span class="centro-nombre">{{ centro.nombre }}</span>
-                <n-tag :type="centro.activo ? 'success' : 'error'" size="small">
-                  {{ centro.activo ? 'Activo' : 'Inactivo' }}
-                </n-tag>
               </div>
               <template #action>
                 <n-space justify="end">
@@ -156,9 +153,6 @@
       <n-form ref="centroFormRef" :model="centroData" :rules="centroRules">
         <n-form-item label="Nombre" path="nombre">
           <n-input v-model:value="centroData.nombre" placeholder="Nombre del centro de distribución" />
-        </n-form-item>
-        <n-form-item label="Activo" path="activo">
-          <n-switch v-model:value="centroData.activo" />
         </n-form-item>
       </n-form>
       <template #action>
@@ -294,18 +288,6 @@ const centrosColumns = [
   {
     title: 'Nombre',
     key: 'nombre'
-  },
-  {
-    title: 'Estado',
-    key: 'activo',
-    width: 100,
-    render(row) {
-      return h(NTag, { 
-        type: row.activo ? 'success' : 'error' 
-      }, { 
-        default: () => row.activo ? 'Activo' : 'Inactivo' 
-      })
-    }
   },
   {
     title: 'Acciones',

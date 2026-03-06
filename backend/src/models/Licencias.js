@@ -7,24 +7,24 @@ class Licencias {
       fexpiraciones,
       fcompra,
       cantidad = 1,
-      iddepartamento
+      idpais
     } = data;
 
     const result = await query(
       `INSERT INTO licencias 
-       (nombre, fexpiraciones, fcompra, cantidad, iddepartamento)
+       (nombre, fexpiraciones, fcompra, cantidad, idpais)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [nombre, fexpiraciones, fcompra, cantidad, iddepartamento]
+      [nombre, fexpiraciones, fcompra, cantidad, idpais]
     );
     return result.rows[0];
   }
 
   static async findAll(options = {}) {
     const { limit = 50, offset = 0, search, expiradas } = options;
-    let sql = `SELECT l.*, d.nombre as departamento_nombre
+    let sql = `SELECT l.*, p.nombre as pais_nombre
       FROM licencias l
-      LEFT JOIN departamentos d ON l.iddepartamento = d.id`;
+      LEFT JOIN paises p ON l.idpais = p.id`;
     
     const conditions = [];
     const params = [];
@@ -54,9 +54,9 @@ class Licencias {
 
   static async findById(id) {
     const result = await query(
-      `SELECT l.*, d.nombre as departamento_nombre
+      `SELECT l.*, p.nombre as pais_nombre
        FROM licencias l
-       LEFT JOIN departamentos d ON l.iddepartamento = d.id
+       LEFT JOIN paises p ON l.idpais = p.id
        WHERE l.id = $1`,
       [id]
     );
@@ -68,7 +68,7 @@ class Licencias {
     const values = [];
     let paramCount = 1;
 
-    const allowedFields = ['nombre', 'fexpiraciones', 'fcompra', 'cantidad', 'iddepartamento'];
+    const allowedFields = ['nombre', 'fexpiraciones', 'fcompra', 'cantidad', 'idpais'];
 
     for (const [key, value] of Object.entries(data)) {
       if (allowedFields.includes(key) && value !== undefined) {
@@ -126,9 +126,9 @@ class Licencias {
 
   static async getProximasExpirar(dias = 30) {
     const result = await query(
-      `SELECT l.*, d.nombre as departamento_nombre
+      `SELECT l.*, p.nombre as pais_nombre
        FROM licencias l
-       LEFT JOIN departamentos d ON l.iddepartamento = d.id
+       LEFT JOIN paises p ON l.idpais = p.id
        WHERE l.fexpiraciones BETWEEN CURRENT_DATE AND CURRENT_DATE + $1
        ORDER BY l.fexpiraciones ASC`,
       [dias]

@@ -3,7 +3,9 @@
     <n-card title="Gestión de Inventario" :bordered="false" class="main-card">
       <template #header-extra>
         <n-button type="primary" @click="showModal = true" size="small" class="create-btn">
-          <template #icon><n-icon><AddOutline /></n-icon></template>
+          <template #icon><n-icon>
+              <AddOutline />
+            </n-icon></template>
           <span class="btn-text">Nuevo Item</span>
         </n-button>
       </template>
@@ -12,41 +14,26 @@
         <div class="filters">
           <n-input v-model:value="search" placeholder="Buscar..." clearable class="search-input">
             <template #prefix>
-              <n-icon><SearchOutline /></n-icon>
+              <n-icon>
+                <SearchOutline />
+              </n-icon>
             </template>
           </n-input>
-          
-          <n-select 
-            v-model:value="tipoFilter" 
-            :options="tipoOptions" 
-            placeholder="Tipo de dispositivo"
-            clearable
-            class="tipo-filter"
-          />
+
+          <n-select v-model:value="tipoFilter" :options="tipoOptions" placeholder="Tipo de dispositivo" clearable
+            class="tipo-filter" />
         </div>
 
         <!-- Desktop table -->
-        <n-data-table
-          :columns="columns"
-          :data="filteredData"
-          :loading="loading"
-          :pagination="pagination"
-          :row-key="row => row.id"
-          class="desktop-table"
-        />
+        <n-data-table :columns="columns" :data="filteredData" :loading="loading" :pagination="pagination"
+          :row-key="row => row.id" class="desktop-table" />
 
         <!-- Mobile cards -->
         <div class="mobile-cards">
           <n-spin :show="loading">
             <n-space vertical size="small">
-              <n-card 
-                v-for="item in filteredData" 
-                :key="item.id" 
-                size="small" 
-                hoverable
-                class="mobile-card"
-                @click="router.push(`/inventario/${item.id}`)"
-              >
+              <n-card v-for="item in filteredData" :key="item.id" size="small" hoverable class="mobile-card"
+                @click="router.push(`/inventario/${item.id}`)">
                 <template #header>
                   <div class="card-header">
                     <span class="item-nserie">{{ item.nserie || 'Sin serie' }}</span>
@@ -89,17 +76,44 @@
     </n-card>
 
     <!-- Modal Crear/Editar -->
-    <n-modal v-model:show="showModal" preset="card" :title="editingItem ? 'Editar Item' : 'Nuevo Item'" style="width: 600px; max-width: 95vw;">
+    <n-modal v-model:show="showModal" preset="card" :title="editingItem ? 'Editar Item' : 'Nuevo Item'"
+      style="width: 600px; max-width: 95vw;">
       <n-form ref="formRef" :model="form" :rules="rules" label-placement="top">
         <n-grid :cols="24" :x-gap="20">
-          <n-gi :span="12" class="form-col">
-            <n-form-item label="No. Serie" path="nserie">
-              <n-input v-model:value="form.nserie" placeholder="Número de serie" />
-            </n-form-item>
-          </n-gi>
-          <n-gi :span="12" class="form-col">
+          <n-gi :span="12" class="form-col" v-if="editingItem">
             <n-form-item label="Activo Fijo" path="nactivofijo">
               <n-input v-model:value="form.nactivofijo" placeholder="Número de activo fijo" />
+            </n-form-item>
+          </n-gi>
+          <n-gi :span="12" class="form-col" v-if="!editingItem">
+            <n-form-item label="Cantidad" path="cantidad">
+              <n-input-number v-model:value="form.cantidad" :min="1" style="width: 100%" />
+            </n-form-item>
+          </n-gi>
+          <n-gi :span="12" class="form-col" v-if="!editingItem">
+            <n-form-item label="Tipo" path="tipo_dispositivo">
+              <n-select v-model:value="form.tipo_dispositivo" :options="tipoDispositivoOptions"
+                placeholder="Seleccionar tipo" />
+            </n-form-item>
+          </n-gi>
+          <n-gi :span="24" v-if="!editingItem && form.cantidad > 1">
+            <n-divider title-placement="left">Números de Serie (ST)</n-divider>
+            <n-grid :cols="2" :x-gap="12">
+              <n-gi v-for="i in form.cantidad" :key="i">
+                <n-form-item :label="`ST Equipo ${i}`">
+                  <n-input v-model:value="form.nseries[i - 1]" :placeholder="`Service Tag ${i}`" />
+                </n-form-item>
+              </n-gi>
+            </n-grid>
+          </n-gi>
+          <n-gi :span="12" class="form-col" v-if="!editingItem && form.cantidad === 1">
+            <n-form-item label="ST (Service Tag)" path="nserie">
+              <n-input v-model:value="form.nserie" placeholder="Service Tag" />
+            </n-form-item>
+          </n-gi>
+          <n-gi :span="12" class="form-col" v-if="editingItem">
+            <n-form-item label="ST (Service Tag)" path="nserie">
+              <n-input v-model:value="form.nserie" placeholder="Service Tag" />
             </n-form-item>
           </n-gi>
           <n-gi :span="12" class="form-col">
@@ -112,76 +126,44 @@
               <n-input v-model:value="form.modelo" placeholder="Modelo" />
             </n-form-item>
           </n-gi>
-          <n-gi :span="12" class="form-col">
-            <n-form-item label="Cantidad" path="cantidad">
-              <n-input-number v-model:value="form.cantidad" :min="1" style="width: 100%" />
-            </n-form-item>
-          </n-gi>
-          <n-gi :span="12" class="form-col">
+          <n-gi :span="12" class="form-col" v-if="editingItem">
             <n-form-item label="Tipo" path="tipo_dispositivo">
-              <n-select v-model:value="form.tipo_dispositivo" :options="tipoDispositivoOptions" placeholder="Seleccionar tipo" />
+              <n-select v-model:value="form.tipo_dispositivo" :options="tipoDispositivoOptions"
+                placeholder="Seleccionar tipo" />
             </n-form-item>
           </n-gi>
           <n-gi :span="24">
             <n-space vertical>
               <n-divider title-placement="left">Fotos de Recepción</n-divider>
-              <n-upload
-                ref="uploadRecepcionRef"
-                multiple
-                v-model:file-list="fileListRecepcion"
-                :max="10"
-                accept="image/*"
-                :default-upload="false"
-                style="display: none"
-              />
-              <n-dropdown 
-                trigger="click" 
-                :options="photoOptions" 
-                @select="(key) => handlePhotoAction(key, 'recepcion')"
-              >
+              <n-upload ref="uploadRecepcionRef" multiple v-model:file-list="fileListRecepcion" :max="10"
+                accept="image/*" :default-upload="false" style="display: none" />
+              <n-dropdown trigger="click" :options="photoOptions"
+                @select="(key) => handlePhotoAction(key, 'recepcion')">
                 <n-button type="warning" secondary block>
-                  <template #icon><n-icon><AddOutline /></n-icon></template>
+                  <template #icon><n-icon>
+                      <AddOutline />
+                    </n-icon></template>
                   Agregar Fotos de Recepción
                 </n-button>
               </n-dropdown>
-              <n-upload
-                multiple
-                list-type="image-card"
-                v-model:file-list="fileListRecepcion"
-                :max="10"
-                accept="image/*"
-                :show-trigger="false"
-              />
+              <n-upload multiple list-type="image-card" v-model:file-list="fileListRecepcion" :max="10" accept="image/*"
+                :show-trigger="false" />
 
               <div v-if="editingItem">
                 <n-divider title-placement="left">Fotos de Entrega</n-divider>
-                <n-upload
-                  ref="uploadEntregaRef"
-                  multiple
-                  v-model:file-list="fileListEntrega"
-                  :max="10"
-                  accept="image/*"
-                  :default-upload="false"
-                  style="display: none"
-                />
-                <n-dropdown 
-                  trigger="click" 
-                  :options="photoOptions" 
-                  @select="(key) => handlePhotoAction(key, 'entrega')"
-                >
+                <n-upload ref="uploadEntregaRef" multiple v-model:file-list="fileListEntrega" :max="10" accept="image/*"
+                  :default-upload="false" style="display: none" />
+                <n-dropdown trigger="click" :options="photoOptions"
+                  @select="(key) => handlePhotoAction(key, 'entrega')">
                   <n-button type="info" secondary block>
-                    <template #icon><n-icon><AddOutline /></n-icon></template>
+                    <template #icon><n-icon>
+                        <AddOutline />
+                      </n-icon></template>
                     Agregar Fotos de Entrega
                   </n-button>
                 </n-dropdown>
-                <n-upload
-                  multiple
-                  list-type="image-card"
-                  v-model:file-list="fileListEntrega"
-                  :max="10"
-                  accept="image/*"
-                  :show-trigger="false"
-                />
+                <n-upload multiple list-type="image-card" v-model:file-list="fileListEntrega" :max="10" accept="image/*"
+                  :show-trigger="false" />
               </div>
             </n-space>
           </n-gi>
@@ -201,56 +183,39 @@
     </n-modal>
 
     <!-- Modal Entregar Equipo (Rápido) -->
-    <n-modal v-model:show="showAsignarModal" preset="card" title="Entregar Equipo" style="width: 500px; max-width: 95vw;">
+    <n-modal v-model:show="showAsignarModal" preset="card" title="Entregar Equipo"
+      style="width: 500px; max-width: 95vw;">
       <n-space vertical size="large">
         <n-form-item label="Equipo seleccionado">
           <n-tag type="info" block>{{ selectedItemSnippet }}</n-tag>
         </n-form-item>
         <n-form-item label="Usuario que recibe">
-          <n-select 
-            v-model:value="asignarForm.idusuario_asignado" 
-            :options="usuariosOptions" 
-            :loading="loadingUsuarios" 
-            filterable 
-            placeholder="Seleccione un usuario" 
-          />
+          <n-select v-model:value="asignarForm.idusuario_asignado" :options="usuariosOptions" :loading="loadingUsuarios"
+            filterable placeholder="Seleccione un usuario" />
         </n-form-item>
         <n-form-item label="Fecha de Entrega">
           <n-date-picker v-model:value="asignarForm.fechaentrega" type="date" style="width: 100%" />
         </n-form-item>
 
         <n-divider title-placement="left">Fotos de Entrega</n-divider>
-        <n-upload
-          ref="uploadEntregaAsignarRef"
-          multiple
-          v-model:file-list="fileListEntregaAsignar"
-          :max="10"
-          accept="image/*"
-          :default-upload="false"
-          style="display: none"
-        />
-        <n-dropdown 
-          trigger="click" 
-          :options="photoOptions" 
-          @select="(key) => handlePhotoAction(key, 'entrega-asignar')"
-        >
+        <n-upload ref="uploadEntregaAsignarRef" multiple v-model:file-list="fileListEntregaAsignar" :max="10"
+          accept="image/*" :default-upload="false" style="display: none" />
+        <n-dropdown trigger="click" :options="photoOptions"
+          @select="(key) => handlePhotoAction(key, 'entrega-asignar')">
           <n-button type="info" secondary block>
-            <template #icon><n-icon><AddOutline /></n-icon></template>
+            <template #icon><n-icon>
+                <AddOutline />
+              </n-icon></template>
             Agregar Fotos de Entrega
           </n-button>
         </n-dropdown>
-        <n-upload
-          multiple
-          list-type="image-card"
-          v-model:file-list="fileListEntregaAsignar"
-          :max="10"
-          accept="image/*"
-          :show-trigger="false"
-        />
+        <n-upload multiple list-type="image-card" v-model:file-list="fileListEntregaAsignar" :max="10" accept="image/*"
+          :show-trigger="false" />
       </n-space>
       <template #footer>
         <n-space justify="end">
-          <n-button type="primary" :loading="saving" :disabled="!asignarForm.idusuario_asignado" @click="handleAsignar">Entregar</n-button>
+          <n-button type="primary" :loading="saving" :disabled="!asignarForm.idusuario_asignado"
+            @click="handleAsignar">Entregar</n-button>
         </n-space>
       </template>
     </n-modal>
@@ -318,6 +283,7 @@ const pagination = ref({
 
 const form = ref({
   nserie: '',
+  nseries: [],
   marca: '',
   modelo: '',
   nactivofijo: '',
@@ -347,27 +313,27 @@ const tipoOptions = computed(() => {
 
 const filteredData = computed(() => {
   let result = data.value
-  
+
   if (search.value) {
     const s = search.value.toLowerCase()
-    result = result.filter(item => 
+    result = result.filter(item =>
       item.nserie?.toLowerCase().includes(s) ||
       item.marca?.toLowerCase().includes(s) ||
       item.modelo?.toLowerCase().includes(s) ||
       item.nactivofijo?.toLowerCase().includes(s)
     )
   }
-  
+
   if (tipoFilter.value) {
     result = result.filter(item => item.tipo_dispositivo === tipoFilter.value)
   }
-  
+
   return result
 })
 
 const columns = [
   {
-    title: 'No. Serie',
+    title: 'ST (Service Tag)',
     key: 'nserie',
     ellipsis: { tooltip: true }
   },
@@ -527,7 +493,7 @@ async function handleAsignar() {
     if (asignarForm.value.fechaentrega) {
       formData.append('fechaentrega', new Date(asignarForm.value.fechaentrega).toISOString().split('T')[0])
     }
-    
+
     // Delivery Photos
     fileListEntregaAsignar.value.forEach(f => {
       if (f.file) formData.append('fotos_entrega', f.file)
@@ -576,7 +542,7 @@ function handlePhotoAction(key, category) {
     if (category === 'entrega') targetRef = uploadEntregaRef
     if (category === 'recepcion') targetRef = uploadRecepcionRef
     if (category === 'entrega-asignar') targetRef = uploadEntregaAsignarRef
-    
+
     const uploadInput = targetRef?.value?.$el.querySelector('input[type="file"]')
     if (uploadInput) uploadInput.click()
   } else if (key === 'camera') {
@@ -589,7 +555,7 @@ function handleCapture({ file, preview }) {
   if (captureCategory.value === 'entrega') targetList = fileListEntrega
   if (captureCategory.value === 'recepcion') targetList = fileListRecepcion
   if (captureCategory.value === 'entrega-asignar') targetList = fileListEntregaAsignar
-  
+
   if (targetList) {
     targetList.value.push({
       id: 'camera-' + Date.now(),
@@ -607,11 +573,13 @@ async function handleSave() {
     saving.value = true
 
     const formData = new FormData()
-    
+
     // Form fields
     Object.keys(form.value).forEach(key => {
       const val = form.value[key]
-      if (val !== null && val !== undefined && val !== '') {
+      if (key === 'nseries' && form.value.cantidad > 1) {
+        val.forEach(s => formData.append('nseries[]', s))
+      } else if (val !== null && val !== undefined && val !== '') {
         formData.append(key, val)
       }
     })
@@ -665,6 +633,7 @@ function handleDelete(item) {
 function resetForm() {
   form.value = {
     nserie: '',
+    nseries: [],
     marca: '',
     modelo: '',
     nactivofijo: '',
@@ -720,60 +689,61 @@ onMounted(() => {
   .filters {
     flex-direction: column;
   }
-  
-  .search-input, .tipo-filter {
+
+  .search-input,
+  .tipo-filter {
     width: 100% !important;
   }
-  
+
   .desktop-table {
     display: none;
   }
-  
+
   .mobile-cards {
     display: block;
   }
-  
+
   .mobile-card {
     margin-bottom: 8px;
     cursor: pointer;
   }
-  
+
   .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
   }
-  
+
   .item-nserie {
     font-weight: 600;
     font-size: 14px;
   }
-  
+
   .card-content {
     padding: 8px 0;
   }
-  
+
   .card-info {
     display: flex;
     gap: 8px;
     margin-bottom: 4px;
     font-size: 13px;
   }
-  
+
   .info-label {
     color: #666;
     min-width: 80px;
   }
-  
+
   .btn-text {
     display: none;
   }
-  
+
   .create-btn {
     padding: 0 8px;
   }
-  
+
   .form-col {
     grid-column: span 24 !important;
   }

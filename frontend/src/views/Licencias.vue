@@ -69,8 +69,8 @@
                     <span>{{ item.cantidad || 1 }}</span>
                   </div>
                   <div class="card-info">
-                    <span class="info-label">Departamento:</span>
-                    <span>{{ item.departamento_nombre || '-' }}</span>
+                    <span class="info-label">País:</span>
+                    <span>{{ item.pais_nombre || '-' }}</span>
                   </div>
                 </div>
                 <template #action>
@@ -101,8 +101,8 @@
         <n-form-item label="Cantidad" path="cantidad">
           <n-input-number v-model:value="form.cantidad" :min="1" style="width: 100%" />
         </n-form-item>
-        <n-form-item label="Departamento" path="iddepartamento">
-          <n-select v-model:value="form.iddepartamento" :options="departamentoOptions" placeholder="Seleccionar" :loading="loadingDptos" />
+        <n-form-item label="País" path="idpais">
+          <n-select v-model:value="form.idpais" :options="paisOptions" placeholder="Seleccionar" :loading="loadingPaises" />
         </n-form-item>
       </n-form>
 
@@ -121,7 +121,7 @@
 import { ref, computed, onMounted, h } from 'vue'
 import { useMessage, useDialog, NButton, NTag, NSpace } from 'naive-ui'
 import { AddOutline, SearchOutline, CreateOutline, TrashOutline } from '@vicons/ionicons5'
-import { licenciasApi, departamentosApi } from '../api'
+import { licenciasApi, paisesApi } from '../api'
 
 const message = useMessage()
 const dialog = useDialog()
@@ -134,8 +134,8 @@ const search = ref('')
 const expiradaFilter = ref(null)
 const data = ref([])
 const formRef = ref(null)
-const departamentoOptions = ref([])
-const loadingDptos = ref(false)
+const paisOptions = ref([])
+const loadingPaises = ref(false)
 
 const pagination = ref({ pageSize: 10 })
 
@@ -144,7 +144,7 @@ const form = ref({
   fcompra: null,
   fexpiraciones: null,
   cantidad: 1,
-  iddepartamento: null
+  idpais: null
 })
 
 const rules = {
@@ -186,10 +186,10 @@ const columns = [
     key: 'cantidad'
   },
   {
-    title: 'Departamento',
-    key: 'departamento_nombre',
+    title: 'País',
+    key: 'pais_nombre',
     render(row) {
-      return row.departamento_nombre || 'N/A'
+      return row.pais_nombre || 'N/A'
     }
   },
   {
@@ -232,18 +232,18 @@ async function loadData() {
   }
 }
 
-async function loadDepartamentos() {
-  loadingDptos.value = true
+async function loadPaises() {
+  loadingPaises.value = true
   try {
-    const response = await departamentosApi.getAll()
-    departamentoOptions.value = (response.data.data || []).map(d => ({
-      label: d.nombre,
-      value: d.id
+    const response = await paisesApi.getActive()
+    paisOptions.value = (response.data.data || []).map(p => ({
+      label: p.nombre,
+      value: p.id
     }))
   } catch (error) {
-    console.error('Error loading departamentos')
+    console.error('Error loading paises')
   } finally {
-    loadingDptos.value = false
+    loadingPaises.value = false
   }
 }
 
@@ -258,7 +258,7 @@ function handleEdit(item) {
     fcompra: item.fcompra ? new Date(item.fcompra).getTime() : null,
     fexpiraciones: item.fexpiraciones ? new Date(item.fexpiraciones).getTime() : null,
     cantidad: item.cantidad || 1,
-    iddepartamento: item.iddepartamento
+    idpais: item.idpais
   }
   showModal.value = true
 }
@@ -319,13 +319,13 @@ function resetForm() {
     fcompra: null,
     fexpiraciones: null,
     cantidad: 1,
-    iddepartamento: null
+    idpais: null
   }
 }
 
 onMounted(() => {
   loadData()
-  loadDepartamentos()
+  loadPaises()
 })
 </script>
 

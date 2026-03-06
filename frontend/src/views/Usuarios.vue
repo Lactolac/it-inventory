@@ -10,18 +10,41 @@
 
       <n-space vertical size="large">
         <div class="filters">
-          <n-input v-model:value="search" placeholder="Buscar..." clearable class="search-input" @update:value="handleSearch">
+          <n-input v-model:value="search" placeholder="Buscar..." clearable class="filter-item search-input" @update:value="handleSearch">
             <template #prefix>
               <n-icon><SearchOutline /></n-icon>
             </template>
           </n-input>
           
           <n-select 
+            v-model:value="paisFilter" 
+            :options="paisOptions" 
+            placeholder="País"
+            clearable
+            class="filter-item"
+            :loading="loadingPaises"
+            @update:value="handlePaisFilterChange"
+          />
+
+          <n-select 
+            v-model:value="cdFilter" 
+            :options="cdOptions" 
+            placeholder="CD"
+            clearable
+            class="filter-item"
+            :loading="loadingCDs"
+            :disabled="!paisFilter"
+            @update:value="handleCDFilterChange"
+          />
+
+          <n-select 
             v-model:value="departamentoFilter" 
             :options="departamentoOptions" 
             placeholder="Departamento"
             clearable
-            class="depto-filter"
+            class="filter-item"
+            :loading="loadingDepartamentos"
+            :disabled="!cdFilter"
             @update:value="handleSearch"
           />
         </div>
@@ -59,6 +82,14 @@
                   <div class="card-info">
                     <span class="info-label">Correo:</span>
                     <span>{{ item.correo || '-' }}</span>
+                  </div>
+                  <div class="card-info">
+                    <span class="info-label">País:</span>
+                    <span>{{ item.pais_nombre || '-' }}</span>
+                  </div>
+                  <div class="card-info">
+                    <span class="info-label">CD:</span>
+                    <span>{{ item.cd_nombre || '-' }}</span>
                   </div>
                   <div class="card-info">
                     <span class="info-label">Departamento:</span>
@@ -101,12 +132,36 @@
             </n-form-item>
           </n-gi>
           <n-gi :span="12" class="form-col">
+            <n-form-item label="País" path="idpais">
+              <n-select 
+                v-model:value="form.idpais" 
+                :options="paisOptions" 
+                placeholder="Seleccionar país"
+                :loading="loadingPaises"
+                @update:value="handlePaisChange"
+              />
+            </n-form-item>
+          </n-gi>
+          <n-gi :span="12" class="form-col">
+            <n-form-item label="Centro de Distribución" path="idcd">
+              <n-select 
+                v-model:value="form.idcd" 
+                :options="cdOptionsModal" 
+                placeholder="Seleccionar CD"
+                :loading="loadingCDsModal"
+                :disabled="!form.idpais"
+                @update:value="handleCDChange"
+              />
+            </n-form-item>
+          </n-gi>
+          <n-gi :span="12" class="form-col">
             <n-form-item label="Departamento" path="iddepartamento">
               <n-select 
                 v-model:value="form.iddepartamento" 
-                :options="departamentoOptions" 
+                :options="departamentoModalOptions" 
                 placeholder="Seleccionar departamento"
-                :loading="loadingDepartamentos"
+                :loading="loadingDepartamentosModal"
+                :disabled="!form.idcd"
                 @update:value="handleDepartamentoChange"
               />
             </n-form-item>
@@ -140,7 +195,7 @@
 import { ref, computed, onMounted, h } from 'vue'
 import { useMessage, useDialog, NButton, NTag, NSpace } from 'naive-ui'
 import { AddOutline, SearchOutline, CreateOutline, TrashOutline } from '@vicons/ionicons5'
-import { usuariosApi, departamentosApi, puestosApi } from '../api'
+import { usuariosApi, departamentosApi, puestosApi, paisesApi, centrosDistribucionApi } from '../api'
 
 const message = useMessage()
 const dialog = useDialog()
@@ -151,20 +206,26 @@ const showModal = ref(false)
 const editingItem = ref(null)
 const search = ref('')
 const departamentoFilter = ref(null)
+const cdFilter = ref(null)
+const paisFilter = ref(null)
 const data = ref([])
 const formRef = ref(null)
 
-// Departamentos y Puestos
-const departamentos = ref([])
-const puestos = ref([])
+// Filtros
+const paises = ref([])
+const centros = ref([])
+const departamentos_filter = ref([])
+const loadingPaises = ref(false)
+const loadingCDs = ref(false)
 const loadingDepartamentos = ref(false)
-const loadingPuestos = ref(false)
 
 const pagination = ref({ pageSize: 10 })
 
 const form = ref({
   nombre: '',
   correo: '',
+  idpais: null,
+  idcd: null,
   iddepartamento: null,
   idpuesto: null
 })
@@ -173,8 +234,37 @@ const rules = {
   nombre: { required: true, message: 'El nombre es requerido' }
 }
 
+const paisOptions = computed(() => {
+  return paises.value.map(p => ({
+    label: p.nombre,
+    value: p.id
+  }))
+})
+
+const cdOptions = computed(() => {
+  return centros.value.map(c => ({
+    label: c.nombre,
+    value: c.id
+  }))
+})
+
 const departamentoOptions = computed(() => {
-  return departamentos.value.map(d => ({
+  return departamentos_filter.value.map(d => ({
+    label: d.nombre,
+    value: d.id
+  }))
+})
+
+// Options para el Modal
+const cdOptionsModal = computed(() => {
+  return centros_modal.value.map(c => ({
+    label: c.nombre,
+    value: c.id
+  }))
+})
+
+const departamentoModalOptions = computed(() => {
+  return departamentos_modal.value.map(d => ({
     label: d.nombre,
     value: d.id
   }))
@@ -197,6 +287,20 @@ const columns = [
     title: 'Correo',
     key: 'correo',
     ellipsis: { tooltip: true }
+  },
+  {
+    title: 'País',
+    key: 'pais_nombre',
+    render(row) {
+      return row.pais_nombre || '-'
+    }
+  },
+  {
+    title: 'CD',
+    key: 'cd_nombre',
+    render(row) {
+      return row.cd_nombre || '-'
+    }
   },
   {
     title: 'Departamento',
@@ -252,6 +356,8 @@ async function loadData() {
     const params = {}
     if (search.value) params.search = search.value
     if (departamentoFilter.value) params.iddepartamento = departamentoFilter.value
+    if (cdFilter.value) params.idcd = cdFilter.value
+    if (paisFilter.value) params.idpais = paisFilter.value
     
     const response = await usuariosApi.getAll(params)
     data.value = response.data.data || []
@@ -262,16 +368,115 @@ async function loadData() {
   }
 }
 
-async function loadDepartamentos() {
+async function loadPaises() {
+  loadingPaises.value = true
+  try {
+    const response = await paisesApi.getActive()
+    paises.value = response.data.data || []
+  } catch (error) {
+    console.error('Error loading paises')
+  } finally {
+    loadingPaises.value = false
+  }
+}
+
+async function loadCDs(idpais) {
+  if (!idpais) {
+    centros.value = []
+    return
+  }
+  loadingCDs.value = true
+  try {
+    const response = await centrosDistribucionApi.getByPais(idpais)
+    centros.value = response.data.data || []
+  } catch (error) {
+    console.error('Error loading CDs')
+  } finally {
+    loadingCDs.value = false
+  }
+}
+
+async function loadDepartamentosFilter(idcd) {
+  if (!idcd) {
+    departamentos_filter.value = []
+    return
+  }
   loadingDepartamentos.value = true
   try {
-    const response = await departamentosApi.getAll()
-    departamentos.value = response.data.data || []
+    // Assuming API supports filtering by CD
+    const response = await departamentosApi.getAll({ idcd })
+    departamentos_filter.value = response.data.data || []
   } catch (error) {
-    console.error('Error loading departamentos')
+    console.error('Error loading departamentos filter')
   } finally {
     loadingDepartamentos.value = false
   }
+}
+
+function handlePaisFilterChange(val) {
+  paisFilter.value = val
+  cdFilter.value = null
+  departamentoFilter.value = null
+  centros.value = []
+  departamentos_filter.value = []
+  if (val) loadCDs(val)
+  handleSearch()
+}
+
+function handleCDFilterChange(val) {
+  cdFilter.value = val
+  departamentoFilter.value = null
+  departamentos_filter.value = []
+  if (val) loadDepartamentosFilter(val)
+  handleSearch()
+}
+
+// Para el Modal
+const centros_modal = ref([])
+const loadingCDsModal = ref(false)
+const departamentos_modal = ref([])
+const loadingDepartamentosModal = ref(false)
+const puestos = ref([])
+const loadingPuestos = ref(false)
+
+async function handlePaisChange(val) {
+  form.value.idcd = null
+  form.value.iddepartamento = null
+  form.value.idpuesto = null
+  centros_modal.value = []
+  departamentos_modal.value = []
+  puestos.value = []
+  if (val) {
+    loadingCDsModal.value = true
+    try {
+      const response = await centrosDistribucionApi.getByPais(val)
+      centros_modal.value = response.data.data || []
+    } finally {
+      loadingCDsModal.value = false
+    }
+  }
+}
+
+async function handleCDChange(val) {
+  form.value.iddepartamento = null
+  form.value.idpuesto = null
+  departamentos_modal.value = []
+  puestos.value = []
+  if (val) {
+    loadingDepartamentosModal.value = true
+    try {
+      const response = await departamentosApi.getAll({ idcd: val })
+      departamentos_modal.value = response.data.data || []
+    } finally {
+      loadingDepartamentosModal.value = false
+    }
+  }
+}
+
+function handleDepartamentoChange(val) {
+  form.value.idpuesto = null
+  puestos.value = []
+  if (val) loadPuestos(val)
 }
 
 async function loadPuestos(iddepartamento) {
@@ -290,11 +495,6 @@ async function loadPuestos(iddepartamento) {
   }
 }
 
-function handleDepartamentoChange(iddepartamento) {
-  form.value.idpuesto = null
-  loadPuestos(iddepartamento)
-}
-
 function handleSearch() {
   loadData()
 }
@@ -304,24 +504,45 @@ function openCreate() {
   form.value = {
     nombre: '',
     correo: '',
+    idpais: null,
+    idcd: null,
     iddepartamento: null,
     idpuesto: null
   }
+  centros_modal.value = []
+  departamentos_modal.value = []
   puestos.value = []
   showModal.value = true
 }
 
-function handleEdit(item) {
+async function handleEdit(item) {
   editingItem.value = item
   form.value = {
     nombre: item.nombre || '',
     correo: item.correo || '',
+    idpais: item.idpais,
+    idcd: item.idcd,
     iddepartamento: item.iddepartamento,
     idpuesto: item.idpuesto
+  }
+  
+  // Cargar datos en cascada para la edición
+  if (item.idpais) {
+    loadingCDsModal.value = true
+    const res = await centrosDistribucionApi.getByPais(item.idpais)
+    centros_modal.value = res.data.data || []
+    loadingCDsModal.value = false
+  }
+  if (item.idcd) {
+    loadingDepartamentosModal.value = true
+    const res = await departamentosApi.getAll({ idcd: item.idcd })
+    departamentos_modal.value = res.data.data || []
+    loadingDepartamentosModal.value = false
   }
   if (item.iddepartamento) {
     loadPuestos(item.iddepartamento)
   }
+  
   showModal.value = true
 }
 
@@ -370,7 +591,7 @@ function handleDelete(item) {
 
 onMounted(() => {
   loadData()
-  loadDepartamentos()
+  loadPaises()
 })
 </script>
 
@@ -386,12 +607,12 @@ onMounted(() => {
   width: 100%;
 }
 
-.search-input {
-  width: 300px;
+.filter-item {
+  width: 200px;
 }
 
-.depto-filter {
-  width: 200px;
+.search-input {
+  width: 300px;
 }
 
 .desktop-table {

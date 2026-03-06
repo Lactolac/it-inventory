@@ -4,13 +4,15 @@ const Puesto = require('../models/Puesto');
 const departamentosController = {
   async getAll(req, res) {
     try {
-      const { limit, offset, search } = req.query;
+      const { limit, offset, search, idcd, idpais } = req.query;
       const departamentos = await Departamento.findAll({ 
         limit: parseInt(limit) || 50, 
         offset: parseInt(offset) || 0,
-        search
+        search,
+        idcd,
+        idpais
       });
-      const total = await Departamento.count({ search });
+      const total = await Departamento.count({ search, idcd, idpais });
       res.json({ data: departamentos, total });
     } catch (error) {
       console.error('Error al obtener departamentos:', error);

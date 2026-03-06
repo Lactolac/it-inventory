@@ -16,6 +16,22 @@ class InventarioController {
         }
       }
 
+      // Handle bulk creation if nseries is an array
+      if (Array.isArray(data.nseries) && data.nseries.length > 0) {
+        const items = [];
+        for (const s of data.nseries) {
+          const itemData = { ...data, nserie: s };
+          delete itemData.nseries;
+          itemData.cantidad = 1; // Each created item has quantity 1
+          items.push(await Inventario.create(itemData));
+        }
+        return res.status(201).json({
+          success: true,
+          message: `${items.length} items de inventario creados exitosamente`,
+          data: items
+        });
+      }
+
       const item = await Inventario.create(data);
       res.status(201).json({
         success: true,
@@ -186,6 +202,21 @@ class InventarioController {
 
       if (req.files && req.files.fotos_entrega) {
         data.fotos_entrega = req.files.fotos_entrega.map(file => `/uploads/inventory/${file.filename}`);
+      }
+
+      // Auto-generate nactivofijo if assigning to a user and nactivofijo is missing
+      if (data.idusuario_asignado) {
+        const currentItem = await Inventario.findById(id);
+        if (currentItem && !currentItem.nactivofijo) {
+          const Usuarios = require('../models/Usuarios');
+          const user = await Usuarios.findById(data.idusuario_asignado);
+          if (user && user.departamento_nombre) {
+            const prefix = user.departamento_nombre.substring(0, 3).toUpperCase();
+            data.nactivofijo = `${prefix}-${id}`;
+          } else {
+            data.nactivofijo = `INV-${id}`;
+          }
+        }
       }
 
       const item = await Inventario.update(id, data);
